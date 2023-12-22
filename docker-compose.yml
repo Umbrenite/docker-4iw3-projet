@@ -1,0 +1,38 @@
+version: "3.4"
+
+services:
+  symfony:
+    build:
+      context: .
+      target: symfonyApp
+    ports:
+      - "80:80"
+      - "443:443/tcp"
+      - "443:443/udp"
+    depends_on:
+      - database
+      - composer
+    volumes:
+      - ./symfony:/src/app/
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    stdin_open: true
+
+  composer:
+    build:
+      context: .
+      target: composerApp
+    stdin_open: true
+
+  database:
+    extends:
+      file: docker-compose-db.yml
+      service: database
+
+networks:
+  project:
+    name: docker-project
+    driver: bridge
