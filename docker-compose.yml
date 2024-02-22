@@ -20,6 +20,8 @@ services:
       retries: 3
       start_period: 30s
     stdin_open: true
+    networks:
+      - my_network
 
   composer:
     build:
@@ -31,8 +33,23 @@ services:
     extends:
       file: docker-compose-db.yml
       service: database
+    
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: database
+    depends_on:
+      - database
+    restart: unless-stopped
+    stdin_open: true
+    networks:
+      - my_network
 
 networks:
+  my_network:
+    driver: bridge
   project:
     name: docker-project
     driver: bridge

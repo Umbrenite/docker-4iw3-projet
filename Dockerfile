@@ -37,15 +37,18 @@ RUN apk update && apk add --no-cache \
 	;
 
 # DATABASE
-FROM alpine AS postgresDB
+FROM postgres:alpine AS postgresDB
 
-RUN apk update
+RUN apk add --no-cache postgresql-client
+
+ENV POSTGRES_USER=${POSTGRES_USER} \
+    POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+    POSTGRES_DB=${POSTGRES_DB}
+
+COPY create_table.sql /docker-entrypoint-initdb.d/
+COPY insert_todo.sql /docker-entrypoint-initdb.d/
 
 # ADMINER
 FROM alpine AS adminer
 
 RUN apk update
-
-
-
-
