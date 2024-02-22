@@ -1,0 +1,5 @@
+CREATE TABLE todo (
+    id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    done BOOLEAN NOT NULL DEFAULT false
+);
