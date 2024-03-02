@@ -51,4 +51,25 @@ COPY insert_todo.sql /docker-entrypoint-initdb.d/
 # ADMINER
 FROM alpine AS adminer
 
-RUN apk update
+RUN apk -U upgrade \
+ && apk add -t build-dependencies \
+    ca-certificates \
+    openssl \
+ && apk add \
+    su-exec \
+    tini \
+    php81 \
+    php81-session \
+    php81-pdo_mysql \
+    php81-pdo_pgsql \
+    php81-pdo_sqlite \
+    curl;
+
+RUN mkdir -p /usr/share/adminer/ && \
+    curl -Lo /usr/share/adminer/adminer.php https://github.com/vrana/adminer/releases/download/v4.8.1/adminer-4.8.1-en.php
+
+EXPOSE 8080
+
+CMD ["php81", "-S", "0.0.0.0:8080", "-t", "/usr/share/adminer/"]
+
+
