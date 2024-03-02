@@ -1,3 +1,5 @@
+ARG PHP_VERSION=8.1
+ARG CADDY_VERSION=2
 
 # COMPOSER
 FROM alpine AS composerApp
@@ -15,7 +17,7 @@ RUN apk update && apk add --no-cache \
 
 # Installation de composer dans alpine
 RUN php81 -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-RUN php81 -r "if (hash_file('sha384', 'composer-setup.php') === 'edb40769019ccf227279e3bdd1f5b2e9950eb000c3233ee85148944e555d97be3ea4f40c3c2fe73b22f875385f6a5155') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+RUN php81 -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
 RUN php81 composer-setup.php
 RUN php81 -r "unlink('composer-setup.php');"
 
@@ -39,19 +41,12 @@ FROM alpine AS adminer
 
 RUN apk update
 
+# SYMFONY
+FROM php:${PHP_VERSION}-fpm-alpine AS app_php
 
-
-# SYMFONY APP
-FROM php:8.1-fpm-alpine AS symfonyApp
-
-
-# Allow to use development versions of Symfony
 ARG STABILITY="stable"
 ENV STABILITY ${STABILITY}
-ARG PHPIZE_DEPS="autoconf g++ make"
 
-
-# Allow to select Symfony version
 ARG SYMFONY_VERSION=""
 ENV SYMFONY_VERSION ${SYMFONY_VERSION}
 
@@ -59,7 +54,6 @@ ENV APP_ENV=prod
 
 WORKDIR /srv/app
 
-# Install dependancies
 RUN apk add --no-cache \
 		acl \
 		fcgi \
@@ -68,18 +62,6 @@ RUN apk add --no-cache \
 		git \
         linux-headers \
 		npm \
-		autoconf \
-        g++ \
-        make \
-        libpng \
-        libpng-dev \
-        freetype \
-        freetype-dev \
-        libjpeg-turbo \
-        libjpeg-turbo-dev \
-        zlib-dev \
-		openrc \
-		apache2 \
 	;
 
 RUN set -eux; \
@@ -122,14 +104,10 @@ RUN set -eux; \
 	\
 	apk del .build-deps
 
-###> recipes ###
-###> doctrine/doctrine-bundle ###
 RUN apk add --no-cache --virtual .pgsql-deps postgresql-dev; \
 	docker-php-ext-install -j$(nproc) pdo pdo_pgsql iconv; \
 	apk add --no-cache --virtual .pgsql-rundeps so:libpq.so.5; \
 	apk del .pgsql-deps
-###< doctrine/doctrine-bundle ###
-###< recipes ###
 
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY docker/php/conf.d/app.ini $PHP_INI_DIR/conf.d/
@@ -147,8 +125,8 @@ COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 RUN chmod +x /usr/local/bin/docker-entrypoint
 
 ENTRYPOINT ["docker-entrypoint"]
+CMD ["php-fpm"]
 
-# https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV PATH="${PATH}:/root/.composer/vendor/bin"
 
@@ -170,13 +148,10 @@ ARG DATABASE_URL=""
 ENV DATABASE_URL=${DATABASE_URL}
 
 RUN set -eux; \
-	mkdir -p var/cache var/log; \
-    if [ -f composer.json ]; then \
-		composer dump-autoload --classmap-authoritative --no-dev; \
-		composer dump-env prod; \
-		composer run-script --no-dev post-install-cmd; \
-		chmod +x bin/console; sync; \
-    fi
+	mkdir -p var/cache var/log;
+
+# Dev image
+FROM app_php AS app_php_dev
 
 ENV APP_ENV=dev XDEBUG_MODE=off
 VOLUME /srv/app/var/
@@ -195,4 +170,22 @@ RUN set -eux; \
 
 RUN rm -f .env.local.php
 
+# "encore" command
+COPY package*.json .
+RUN npm install
+
+FROM caddy:${CADDY_VERSION}-builder-alpine AS app_caddy_builder
+
+RUN xcaddy build \
+	--with github.com/dunglas/mercure \
+	--with github.com/dunglas/mercure/caddy \
+	--with github.com/dunglas/vulcain \
+	--with github.com/dunglas/vulcain/caddy
+
+FROM caddy:${CADDY_VERSION} AS app_caddy
+
 WORKDIR /srv/app
+
+COPY --from=app_caddy_builder /usr/bin/caddy /usr/bin/caddy
+COPY --from=app_php /srv/app/public public/
+COPY docker/caddy/Caddyfile /etc/caddy/Caddyfile
