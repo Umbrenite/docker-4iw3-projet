@@ -1,5 +1,5 @@
 <?php
-$dsn = "pgsql:host=172.17.0.1;port=5432;dbname=database";
+$dsn = "pgsql:host=database;port=5432;dbname=database";
 $username = "postgres";
 $password = "admin";
 $pdo = new PDO($dsn, $username, $password);
