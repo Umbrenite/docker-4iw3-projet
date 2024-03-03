@@ -1,11 +1,21 @@
-# docker-4iw3-projet
-docker compose -f docker-compose.yml -f docker-compose-db.yml build --no-cache  -> Build avec les deux fichiers docker-compose.yml
+# GROUPE 2 - 4IW3
 
-docker compose -f docker-compose.yml -f docker-compose-db.yml up -d             -> Lancement des 4 conteneurs
+## Commandes à utiliser
+COMMANDE|DESCRIPTION                       |
+-------------------------------|-----------------------------|
+`docker compose -f docker-compose.yml -f docker-compose-db.yml build --no-cache`            | Build le projet en utilisant les deux fichiers docker-compose présents dans la structure            |
+`docker compose up`            |Lancement du projet         |
+`docker compose exec -it ${CONTAINER_NAME} sh`| Rentrer dans le conteneur _${CONTAINER_NAME}_ **[database, php, composer, adminer]**|
 
-docker compose exec -it database sh                                             -> Rentrer dans le conteneur database
-docker compose exec -it composer sh                                             -> Rentrer dans le conteneur composer
-docker compose exec -it symfony sh                                              -> Rentrer dans le conteneur symfony
-docker compose exec -it adminer sh                                              -> Rentrer dans le conteneur adminer
-
-ping ${NOM_CONTENEUR}                                                           -> Tester la connexion avec les autres conteneurs
+## Fonctionnalités
+FONCTIONNALITÉ|FAIT/PAS FAIT                       |
+-------------------------------|-----------------------------|
+Projet fonctionnel           | Fait            |
+Symfony custom et hébergé sur DockerHub            | Fait            |
+Adminer custom et hébergé sur DockerHub            | Fait            |
+Symfony custom et hébergé sur DockerHub            | Fait            |
+Postgres custom et hébergé sur DockerHub            | Fait            |
+Composer custom et hébergé sur DockerHub            | Fait            |
+Installation de dépendances fonctionnelle avec Composer        | Fait            |
+[BONUS] - Le Symfony et la BDD sur des docker-compose différents         | Fait            |
+[ Lien vers le docker hub où sont partagés les images](https://hub.docker.com/u/umbrenite)
